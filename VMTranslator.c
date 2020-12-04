@@ -384,6 +384,14 @@ void pop(FILE *fout, char *segment, char *istring) {
     }
 }
 
+void endProgram(FILE *fout) {
+    fprintf(fout,
+        "// End of program\n"
+        "@%d\n"
+        "0;JMP",
+        numAssemblerLines + 1);
+    numAssemblerLines += 2;
+}
 #define FNIDX_LENGTH 17
 // Hopefully initializes uninitialized entries to 0
 entry fnidx[FNIDX_LENGTH] = {
@@ -479,9 +487,12 @@ int main(int argc, char *argv[]) {
         // Now fin is ready to give next line
     }
 
-    fclose(fout);
+    // End of fin was reached
+    // Write end to put assembly in infinite loop
+    endProgram(fout);
 
     fclose(fin);
+    fclose(fout);
 
     printf("Finsihed successfully\n");
 
