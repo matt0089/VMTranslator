@@ -342,10 +342,10 @@ void push(FILE *fout, char *segment, char *istring) {
 }
 
 void pop(FILE *fout, char *segment, char *istring) {
-    char **str_end = NULL;
-    long int i = strtol(istring, str_end, 10);
+    char *str_end = NULL;
+    long int i = strtol(istring, &str_end, 10);
 
-    if (*str_end == istring) {
+    if (str_end == istring) {
         perror("No natural number argument given to push");
         exit(EXIT_FAILURE);
     }
