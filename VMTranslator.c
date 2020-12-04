@@ -108,7 +108,7 @@ void sub(FILE *fout) {
 void neg(FILE *fout) {
     fputs("// neg\n"
           "@SP\n"
-          "A=A-1\n"
+          "A=M-1\n"
           "M=-M\n",
           fout);
     
@@ -180,8 +180,8 @@ void or(FILE *fout) {
 void not(FILE *fout) {
     fputs("// not\n"
           "@SP\n"
-          "A=A-1\n"
-          "M=-M\n",
+          "A=M-1\n"
+          "M=!M\n",
           fout);
     
     AssemblerLineIdx += 3;
