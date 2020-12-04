@@ -431,21 +431,28 @@ int main(int argc, char *argv[]) {
     // char tokbuf[LONGEST_INSTRUCTION+1] = {'\0'};
 
     while (!feof(fin) && !ferror(fin)) {
-
-        fgets(strbuf, LONGEST_INSTRUCTION, fin);
+        //* Edge case: not at end of file in while test, but immediately
+        //*   hit EOF in fgets().  fgets() then doesn't update strbuf bc
+        //*   it read no characters.
+        // Fix by setting first character to \0, so below will see an
+        //   empty string
+        strbuf[0] = '\0';
+        fgets(strbuf, LONGEST_INSTRUCTION+1, fin);
 
         if (strbuf == NULL) {
             perror("fgets() in main() had an error");
             exit(EXIT_FAILURE);
         }
 
-        //* Just copy strbuf each time.  There maybe a more efficent way
-        //strcpy(tokbuf, strbuf);
         char *toks[4] = {NULL, NULL, NULL, NULL};
         toks[0] = strtok(strbuf, " \r\n");
         toks[1] = strtok(NULL, " \r\n");
         toks[2] = strtok(NULL, " \r\n");
         toks[3] = strtok(NULL, " \r\n");
+
+        // If no tokens found, continue
+        if (toks[0] == NULL)
+            continue;
 
         for (int i=0; i < 4; ++i) {
             // If command is longer than 50 characters
@@ -456,9 +463,6 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // If no tokens found, continue
-        if (toks[0] == NULL)
-            continue;
         for (int i=0; i < FNIDX_LENGTH; ++i) {
             if (!strncmp(toks[0], fnidx[i].key, LONGEST_FIRST_WORD)) {
                 if (fnidx[i].type == LOGICAL)
