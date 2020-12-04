@@ -227,6 +227,7 @@ void popRegularSegment(FILE *fout, char *segmentSymbol, long int i) {
             "A=M\n"   // Will address new top of stack (the old 1st val)
             "D=M\n"   
             "@%1$s\n"   // point to segment register
+            "A=M\n"
             "M=D\n"   // store popped value into memory
             "@%2$ld\n"   // restore segment register to original value
             "D=A\n"
@@ -234,7 +235,7 @@ void popRegularSegment(FILE *fout, char *segmentSymbol, long int i) {
             "M=M-D\n",
             segmentSymbol, i);
     
-    AssemblerLineIdx += 14;
+    AssemblerLineIdx += 15;
 }
 
 void pushStaticSegment(FILE *fout, long int i) {
@@ -269,11 +270,11 @@ void popStaticSegment(FILE *fout, long int i) {
     char *filebasename = "File";  //TODO: Add function to determine this
 
     fprintf(fout,
-        "// push static\n"
+        "// pop static\n"
         "@SP\n"     // Pop from stack into D, and adjust stack pointer one up
         "M=M-1\n"
         "A=M\n"     // New top of stack (old 1st val we want)
-        "M=D\n"
+        "D=M\n"
         "@%s.%ld\n" // Store popped value into static memory address
         "M=D\n",
         filebasename, i);
@@ -331,7 +332,7 @@ void push(FILE *fout, char *segment, char *istring) {
             "M=M+1\n"
             "A=M-1\n"
             "M=D\n"
-            ,i+13L);
+            ,i+3L);
         AssemblerLineIdx += 6;
     } else {
         printf("'%s'", segment);
@@ -383,7 +384,7 @@ void pop(FILE *fout, char *segment, char *istring) {
             "D=M\n"
             "@%ld\n"
             "M=D\n"
-            ,i+13L);
+            ,i+3L);
         AssemblerLineIdx += 6;
     } else {
         printf("'%s'", segment);
