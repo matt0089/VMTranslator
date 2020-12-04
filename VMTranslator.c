@@ -224,7 +224,7 @@ void popRegularSegment(FILE *fout, char *segmentSymbol, long int i) {
             "M=M+D\n"
             "@SP\n"   // Pop from stack into D, and adjust stack pointer one up
             "M=M-1\n" 
-            "A=M+1\n" 
+            "A=M\n"   // Will address new top of stack (the old 1st val)
             "D=M\n"   
             "@%1$s\n"   // point to segment register
             "M=D\n"   // store popped value into memory
@@ -272,7 +272,7 @@ void popStaticSegment(FILE *fout, long int i) {
         "// push static\n"
         "@SP\n"     // Pop from stack into D, and adjust stack pointer one up
         "M=M-1\n"
-        "A=M+1\n"
+        "A=M\n"     // New top of stack (old 1st val we want)
         "M=D\n"
         "@%s.%ld\n" // Store popped value into static memory address
         "M=D\n",
@@ -368,7 +368,7 @@ void pop(FILE *fout, char *segment, char *istring) {
             "// pop temp\n"
             "@SP\n"
             "M=M-1\n"
-            "A=M+1\n"
+            "A=M\n"
             "D=M\n"   // store popped value into D
             "@%ld\n"  // address the temp slot referenced
             "M=D\n"   // put popped value into memory
@@ -379,7 +379,7 @@ void pop(FILE *fout, char *segment, char *istring) {
             "// pop pointer\n"
             "@SP\n"
             "M=M-1\n"
-            "A=M+1\n"
+            "A=M\n"
             "D=M\n"
             "@%ld\n"
             "M=D\n"
