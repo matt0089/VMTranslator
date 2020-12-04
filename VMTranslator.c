@@ -192,22 +192,6 @@ void not(FILE *fout) {
           fout);
 }
 
-void printPush(FILE *fout) {
-    fputs("@SP\n"
-          "M=M+1\n" // set new top of stack one down
-          "A=M-1\n" // point to address one above (new 1st val of stack)
-          "M=D\n", // put stored value in memory
-          fout);
-}
-
-void printPop(FILE *fout) {
-    fputs("@SP\n"
-          "M=M-1\n" // set new top of stack one up
-          "A=M+1\n" // point to address one down (where popped val from stack is)
-          "D=M\n", // put value in memory in register D
-          fout);
-}
-
 void pushRegularSegment(FILE *fout, char *segmentSymbol, long int i) {
     if (i > 16384L) {
         perror("Argument given to push is greater than size of Ram (16KiB");
