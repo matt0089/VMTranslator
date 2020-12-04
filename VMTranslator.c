@@ -73,6 +73,10 @@ typedef struct entry {
     } f;
 } entry;
 
+// Number of lines currently written.
+// Needed to generate unlabeled jump addresses for each gt,lt,eq
+int numAssemblerLines = 0;
+
 
 void add(FILE *fout) {
     fputs("// add\n"
@@ -83,6 +87,8 @@ void add(FILE *fout) {
           "A=A-1\n"  // address 2nd val in stack (one above current address)
           "M=M+D\n",  // (2nd val in stack) = (itself) + (1st val in stack),
           fout);
+    
+    numAssemblerLines += 6;
 }
 
 void sub(FILE *fout) {
@@ -94,6 +100,8 @@ void sub(FILE *fout) {
           "A=A-1\n"  // address 2nd val in stack (one above current address)
           "M=M-D\n",  // (2nd val in stack) = (itself) + (1st val in stack),
           fout);
+    
+    numAssemblerLines += 6;
 }
 
 void neg(FILE *fout) {
@@ -102,64 +110,44 @@ void neg(FILE *fout) {
           "A=A-1\n"
           "M=-M\n",
           fout);
+    
+    numAssemblerLines += 3;
+}
+
+void comparisonCommand(FILE *fout, char* comment, char *cmd) {
+    // numAssemblerLines represents the current number of instructions written
+    //   This allows direct line number references for JMP commands below
+    fprintf(fout,
+          "// %s\n"
+          "@SP\n"   //  1
+          "M=M-1\n" //  2 set new stack pointer to the address one above it
+          "A=M\n"   //  3 set address to 1st val in stack (where new stack pointer is)
+          "D=M\n"   //    store first val in register
+          "A=A-1\n" //    address 2nd val in stack (one above current address)
+          "D=M-D\n" //    store (2nd val in stack) - (1st val in stack) in register
+          "@%d\n"
+          "D;%s\n" //  8 register > 0?  If so, goto true case
+          "@SP\n"   //  9 if false: set new 1st val in stack to 00...B
+          "A=M-1\n"
+          "M=0\n"   // 11
+          "@%d\n"  // 12 jump passed true case
+          "0;JMP\n"
+          "@SP\n"   // 14 if true: set new 1st val in stack to 11...B
+          "A=M-1\n"
+          "M=-1\n", // 16
+          comment, numAssemblerLines+14, cmd, numAssemblerLines+17);
+    
+    numAssemblerLines += 16;
 }
 
 void gt(FILE *fout) {
-    fputs("// gt\n"
-          "@SP\n"
-          "M=M-1\n" // set new stack pointer to the address one above it
-          "A=M\n"   // set address to 1st val in stack (where new stack pointer is)
-          "D=M\n"   // store first val in register
-          "A=A-1\n" // address 2nd val in stack (one above current address)
-          "D=M-D\n" // store (2nd val in stack) - (1st val in stack) in register
-          "@__TRUE\n"
-          "D;JGT\n" // register > 0?  If so, goto __TRUE
-          "@SP\n"   // if false: set new 1st val in stack to 00...B
-          "A=M-1\n"
-          "M=0\n",
-          fout);
+    comparisonCommand(fout, "gt", "JGT");
 }
-
-void writeTrueGlobalCode(FILE *fout) {
-    //! This might be sensitive to bugs, global var __TRUE may break it
-    fputs("// Global code used for vm commands gt, eq, lt\n"
-          "(__TRUE)\n"
-          "@SP\n"
-          "A=M-1\n"  // address first value in stack
-          "M=-1\n",  // set it to 1111111111111111B
-          fout);
-}
-
 void eq(FILE *fout) {
-    fputs("// eq\n"
-          "@SP\n"
-          "M=M-1\n" // set new stack pointer to the address one above it
-          "A=M\n"   // set address to 1st val in stack (where new stack pointer is)
-          "D=M\n"   // store first val in register
-          "A=A-1\n" // address 2nd val in stack (one above current address)
-          "D=M-D\n" // store (2nd val in stack) - (1st val in stack) in register
-          "@__TRUE\n"
-          "D;JEQ\n" // register == 0?  If so, goto __TRUE
-          "@SP\n"   // if false: set new 1st val in stack to 00...B
-          "A=M-1\n"
-          "M=0\n",
-          fout);
+    comparisonCommand(fout, "eq", "JEQ");
 }
-
 void lt(FILE *fout) {
-    fputs("// lt\n"
-          "@SP\n"
-          "M=M-1\n" // set new stack pointer to the address one above it
-          "A=M\n"   // set address to 1st val in stack (where new stack pointer is)
-          "D=M\n"   // store first val in register
-          "A=A-1\n" // address 2nd val in stack (one above current address)
-          "D=M-D\n" // store (2nd val in stack) - (1st val in stack) in register
-          "@__TRUE\n"
-          "D;JLT\n" // register < 0?  If so, goto __TRUE
-          "@SP\n"   // if false: set new 1st val in stack to 00...B
-          "A=M-1\n"
-          "M=0\n",
-          fout);
+    comparisonCommand(fout, "lt", "JLT");
 }
 
 void and(FILE *fout) {
@@ -171,6 +159,8 @@ void and(FILE *fout) {
           "A=A-1\n"  // address 2nd val in stack (one above current address)
           "M=M&D\n",  // (2nd val in stack) = (itself) & (1st val in stack),
           fout);
+    
+    numAssemblerLines += 6;
 }
 
 void or(FILE *fout) {
@@ -182,6 +172,8 @@ void or(FILE *fout) {
           "A=A-1\n"  // address 2nd val in stack (one above current address)
           "M=M|D\n",  // (2nd val in stack) = (itself) | (1st val in stack),
           fout);
+
+    numAssemblerLines += 6;
 }
 
 void not(FILE *fout) {
@@ -190,6 +182,8 @@ void not(FILE *fout) {
           "A=A-1\n"
           "M=-M\n",
           fout);
+    
+    numAssemblerLines += 3;
 }
 
 void pushRegularSegment(FILE *fout, char *segmentSymbol, long int i) {
@@ -211,6 +205,8 @@ void pushRegularSegment(FILE *fout, char *segmentSymbol, long int i) {
             "A=M-1\n" // point to address one above (new 1st val of stack)
             "M=D\n", // put stored value in memory
             segmentSymbol, i, segmentSymbol);
+    
+    numAssemblerLines += 10;
 }
 
 void popRegularSegment(FILE *fout, char *segmentSymbol, long int i) {
@@ -235,7 +231,9 @@ void popRegularSegment(FILE *fout, char *segmentSymbol, long int i) {
             "D=A\n"
             "@%1$s\n"
             "M=M-D\n",
-            segmentSymbol, i);  
+            segmentSymbol, i);
+    
+    numAssemblerLines += 14;
 }
 
 void pushStaticSegment(FILE *fout, long int i) {
@@ -256,6 +254,8 @@ void pushStaticSegment(FILE *fout, long int i) {
         "A=M-1\n"
         "M=D\n",
         filebasename,i);
+    
+    numAssemblerLines += 6;
 }
 
 void popStaticSegment(FILE *fout, long int i) {
@@ -276,6 +276,8 @@ void popStaticSegment(FILE *fout, long int i) {
         "@%s.%ld\n" // Store popped value into static memory address
         "M=D\n",
         filebasename, i);
+    
+    numAssemblerLines += 6;
 }
 
 void push(FILE *fout, char *segment, char *istring) {
@@ -295,7 +297,7 @@ void push(FILE *fout, char *segment, char *istring) {
         pushRegularSegment(fout, "THIS", i);
     else if (!strcmp(segment, "that"))
         pushRegularSegment(fout, "THAT", i);
-    else if (!strcmp(segment, "constant"))
+    else if (!strcmp(segment, "constant")) {
         fprintf(fout,
             "// push constant\n"
             "@%ld\n"
@@ -305,9 +307,10 @@ void push(FILE *fout, char *segment, char *istring) {
             "A=M-1\n" // address new first value in stack
             "M=D\n",  // store constant at new first value
             i);
-    else if (!strcmp(segment, "static"))
+        numAssemblerLines += 6;
+    } else if (!strcmp(segment, "static"))
         pushStaticSegment(fout, i);
-    else if (!strcmp(segment, "temp"))
+    else if (!strcmp(segment, "temp")) {
         fprintf(fout,
             "// push temp\n"
             "@%ld\n"
@@ -317,7 +320,8 @@ void push(FILE *fout, char *segment, char *istring) {
             "A=M-1\n"
             "M=D\n"
             ,i+5L);
-    else if (!strcmp(segment, "pointer"))
+        numAssemblerLines += 6;
+    } else if (!strcmp(segment, "pointer")) {
         fprintf(fout,
             "// push pointer\n"
             "@%ld\n"
@@ -327,7 +331,8 @@ void push(FILE *fout, char *segment, char *istring) {
             "A=M-1\n"
             "M=D\n"
             ,i+13L);
-    else {
+        numAssemblerLines += 6;
+    } else {
         printf("'%s'", segment);
         perror(" was found as an invalid segment specifier");
         exit(EXIT_FAILURE);
@@ -357,7 +362,7 @@ void pop(FILE *fout, char *segment, char *istring) {
         exit(EXIT_FAILURE);
     } else if (!strcmp(segment, "static"))
         popStaticSegment(fout, i);
-    else if (!strcmp(segment, "temp")) // TODO: bound check i
+    else if (!strcmp(segment, "temp")) { // TODO: bound check i
         fprintf(fout,
             "// pop temp\n"
             "@SP\n"
@@ -367,7 +372,8 @@ void pop(FILE *fout, char *segment, char *istring) {
             "@%ld\n"  // address the temp slot referenced
             "M=D\n"   // put popped value into memory
             ,i+5L);
-    else if (!strcmp(segment, "pointer")) // TODO: bound check i
+        numAssemblerLines += 6;
+    } else if (!strcmp(segment, "pointer")) { // TODO: bound check i
         fprintf(fout,
             "// pop pointer\n"
             "@SP\n"
@@ -377,7 +383,8 @@ void pop(FILE *fout, char *segment, char *istring) {
             "@%ld\n"
             "M=D\n"
             ,i+13L);
-    else {
+        numAssemblerLines += 6;
+    } else {
         printf("'%s'", segment);
         perror(" was found as an invalid segment specifier");
         exit(EXIT_FAILURE);
@@ -392,6 +399,7 @@ void endProgram(FILE *fout) {
         numAssemblerLines + 1);
     numAssemblerLines += 2;
 }
+
 #define FNIDX_LENGTH 17
 // Hopefully initializes uninitialized entries to 0
 entry fnidx[FNIDX_LENGTH] = {
