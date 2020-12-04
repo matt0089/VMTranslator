@@ -418,17 +418,25 @@ entry fnidx[FNIDX_LENGTH] = {
 
 
 int main(int argc, char *argv[]) {
-    // int status = 0;
+    // Check arguments
+    if (argc != 2) {
+        printf("Error: expects 1 argument of filename only.");
+        return -1;
+    }
     
-    FILE *fin = fopen("SimpleAdd/SimpleAdd.vm", "r");
+    FILE *fin = fopen(argv[1], "r");
     if (fin == NULL) {
         puts(strerror(errno));
+        return EXIT_FAILURE;
     }
+
     FILE *fout = fopen("out.vm", "w");
-    //char parsestr[] = "push constant 3";
+    if (fin == NULL) {
+        puts(strerror(errno));
+        return EXIT_FAILURE;
+    }
+
     char strbuf[LONGEST_INSTRUCTION+1] = {'\0'};
-    // buffer for strtok() to modify when it tokenizes
-    // char tokbuf[LONGEST_INSTRUCTION+1] = {'\0'};
 
     while (!feof(fin) && !ferror(fin)) {
         //* Edge case: not at end of file in while test, but immediately
